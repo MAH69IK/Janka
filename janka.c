@@ -24,8 +24,21 @@ int main() {
      */
 			break;
 		case TOX_ERR_NEW_PROXY_BAD_TYPE:
-
-			break
+    /**
+     * proxy_type was invalid.
+     */
+			break;
+		case TOX_ERR_NEW_PROXY_BAD_PORT:
+    /**
+     * proxy_type was valid, but the proxy_port was invalid.
+     */
+			break;
+		case TOX_ERR_NEW_PROXY_BAD_HOST;
+    /**
+     * proxy_type was valid but the proxy_host passed had an invalid format
+     * or was NULL.
+     */
+			break;
 		case TOX_ERR_NEW_MALLOC:
 			// Вывести сообщение о нехватки памяти и вывести информацию о свободной памяти
 			break;
@@ -33,6 +46,9 @@ int main() {
 			// Вывести сообщение о невозможности назначения порта в следствии его занятости или нехватки прав. Вывести сведения о занятости и/или правах. Попробовать использовать порты на 10 больше/меньше (настраиать через конфиг)
 			break;
 		// Продолжить с другими возможными типами ошибок
+		case TOX_ERR_NEW_OK;
+			// Тут всё хорошо
+			break
 	}
 
 	return 0;
