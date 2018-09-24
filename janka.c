@@ -4,52 +4,49 @@ int main() {
 	TOX_ERR_NEW stato;
 	// Возможно вынести инициализацию в отдельнюу малюсенькую ф-цию, это позволит повторять попытку
 	Tox *tox = tox_new(NULL, &stato);
-	/*if (stato != TOX_ERR_NEW_OK) {
-		fprintf (stderr, "Иницилизация не удалась из-за ошибки: \"%s\"\n", stato);
-		exit(1);
-	}*/
 	switch (stato) {
-		case TOX_ERR_NEW_LOAD_BAD_FORMAT:
-    /**
-     * The data format was invalid. This can happen when loading data that was
-     * saved by an older version of Tox, or when the data has been corrupted.
-     * When loading from badly formatted data, some data may have been loaded,
-     * and the rest is discarded. Passing an invalid length parameter also
-     * causes this error.
-     */
-			break;
-		case TOX_ERR_NEW_LOAD_ENCRYPTED:
-    /**
-     * The byte array to be loaded contained an encrypted save.
-     */
-			break;
-		case TOX_ERR_NEW_PROXY_BAD_TYPE:
-    /**
-     * proxy_type was invalid.
-     */
-			break;
-		case TOX_ERR_NEW_PROXY_BAD_PORT:
-    /**
-     * proxy_type was valid, but the proxy_port was invalid.
-     */
-			break;
-		case TOX_ERR_NEW_PROXY_BAD_HOST;
-    /**
-     * proxy_type was valid but the proxy_host passed had an invalid format
-     * or was NULL.
-     */
-			break;
 		case TOX_ERR_NEW_MALLOC:
-			// Вывести сообщение о нехватки памяти и вывести информацию о свободной памяти
+			fprintf (stderr, "Иницилизация не удалась из-за невозможности выделить память (%s).\n", stato);
+			// Вывести информацию о свободной памяти
+			return 1;
 			break;
 		case TOX_ERR_NEW_PORT_ALLOC:
-			// Вывести сообщение о невозможности назначения порта в следствии его занятости или нехватки прав. Вывести сведения о занятости и/или правах. Попробовать использовать порты на 10 больше/меньше (настраиать через конфиг)
+			fprintf (stderr, "Иницилизация не удалась из-за невозможности использования порта (%s). Возможно порт занят (другим экземпляром Tox'а) или не достаточно прав.\n", stato);
+			// Вывести сведения о занятости порта и/или правах. Попробовать использовать порты с номерами больше/меньше (настраивать через конфиг)
+			return 1;
 			break;
-		// Продолжить с другими возможными типами ошибок
+		case TOX_ERR_NEW_PROXY_BAD_TYPE:
+			fprintf (stderr, "Иницилизация не удалась - не верно указан тип прокси (%s).\n", stato);
+			// Вывести информацию о допустимых значениях и указанном, попробовать повторить без прокси (настраивать через конфиг)
+			return 1;
+			break;
+		case TOX_ERR_NEW_PROXY_BAD_HOST;
+			fprintf (stderr, "Иницилизация не удалась - не верно указан (или вообще пропущен) адрес прокси при включённом использовании прокси (%s).\n", stato);
+			// Вывести информацию об указанном значении, попробовать повторить без прокси (настраивать через конфиг)
+			return 1;
+			break;
+		case TOX_ERR_NEW_PROXY_BAD_PORT:
+			fprintf (stderr, "Иницилизация не удалась - не верно указан порт прокси (%s).\n", stato);
+			// Вывести информацию об указанном значении, попробовать повторить без прокси (настраивать через конфиг)
+			return 1;
+			break;
+		case TOX_ERR_NEW_LOAD_ENCRYPTED:
+			fprintf (stderr, "Иницилизация не удалась - загружаемые данные зашифрованы (%s).\n", stato);
+			// Посмотреть подробнее из-за чего возникает ошибка, что именно зашифровано
+			return 1;
+			break;
+		case TOX_ERR_NEW_LOAD_BAD_FORMAT:
+			fprintf (stderr, "Иницилизация не удалась из-за невозможности загрузки данных (%s). Возможно загружаемые данные принадлежат старой версии Tox'а или данные повреждены.\n", stato);
+			// Проверить подробнее что за данные, условия ошибки, описат подробнее
+			return 1;
+			break;
 		case TOX_ERR_NEW_OK;
 			// Тут всё хорошо
 			break
 	}
+
+	tox_callback_friend_request(tox, handle_friend_request);
+	tox_callback_friend_message(tox, handle_friend_message);
 
 	return 0;
 }
