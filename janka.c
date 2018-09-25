@@ -45,6 +45,7 @@ int main() {
 			break
 	}
 
+	tox_callback_self_connection_status(tox handle_self_connection_status);
 	tox_callback_friend_request(tox, handle_friend_request);
 	tox_callback_friend_message(tox, handle_friend_message);
 
