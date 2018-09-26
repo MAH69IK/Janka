@@ -1,8 +1,28 @@
 #include <tox/tox.h>
 
+static void handle_friend_request(Tox *tox, const uint8_t *public_key, const uint8_t *message, size_t length, void *user_data) {
+	// Нужно проверить, что код, переданный в запросе, совпадает в коде, сохранённом в конфиге, что бы не добавлять всех подряд
+	TOX_ERR_FRIEND_ADD err_friend_add;
+	tox_friend_add_norequest(tox, public_key, &err_friend_add);
+	if (err_friend_add != TOX_ERR_FRIEND_ADD_OK) {
+		fprintf(stderr, "unable to add friend: %d\n", err_friend_add);
+	}
+}
+
+static void handle_friend_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type, const uint8_t *message, size_t length, void *user_data) {
+	// Пример из документации, который просто отсылает сообщение назад. Нужно будет переделать под обработку полученных сообщений.
+	TOX_ERR_FRIEND_SEND_MESSAGE err_send;
+	tox_friend_send_message(tox, friend_number, type, message, length, &err_send);
+	if (err_send != TOX_ERR_FRIEND_SEND_MESSAGE_OK) {
+		fprintf(stderr, "unable to send message back to friend %d: %d\n", friend_number, err_send);
+	}
+}
+
 int main() {
 	TOX_ERR_NEW stato;
 	// Возможно вынести инициализацию в отдельнюу малюсенькую ф-цию, это позволит повторять попытку
+
+	// Создаём экземпляр Tox'а:
 	Tox *tox = tox_new(NULL, &stato);
 	switch (stato) {
 		case TOX_ERR_NEW_MALLOC:
@@ -45,9 +65,39 @@ int main() {
 			break
 	}
 
-	tox_callback_self_connection_status(tox handle_self_connection_status);
+	// Получаем наш Tox ID:
+	uint8_t tox_id_bin[TOX_ADDRESS_SIZE];
+	tox_self_get_address(tox, tox_id_bin);
+
+	// Ф-ция tox_self_get_address() возвращает Tox ID в бинарном виде, преобразовываем его в шестнадцатиричный:
+	char tox_id_hex[TOX_ADDRESS_SIZE * 2 + 1];
+	sodium_bin2hex(tox_id_hex, sizeof(tox_id_hex), tox_id_bin, sizeof(tox_id_bin));
+
+	// Ф-ция sodium_bin2hex() вернула идентификатор с буквами нижнего регистра, но Tox ID записывается с использованием верхнего регистра, меняем:
+	for (size_t i = 0; i < sizeof(tox_id_hex) - 1; i ++) {
+		tox_id_hex[i] = toupper(tox_id_hex[i]);
+	}
+
+	// Записываем наш идентификатор в журнал:
+	fprintf (stdout, "Мой Tox ID: %s.\n", tox_id_hex);
+
+	// Задаём имя нашему экземпляру Tox'а:
+	const char *nomo = "Янка";
+	// Посмотреть что сюда передаётся:
+	tox_self_set_name(tox, nomo, strlen(nomo), NULL);
+
+	// Регистрируем ф-ции обратного вызова.
+	// handle_self_connection_status - для обработки потери соединения;
+	// handle_friend_request - для обработки входящих запросов на добавление в список контактов;
+	// handle_friend_message - для обработки входящих сообщений.
+	tox_callback_self_connection_status(tox, handle_self_connection_status);
 	tox_callback_friend_request(tox, handle_friend_request);
 	tox_callback_friend_message(tox, handle_friend_message);
+
+	while (true) {
+		usleep(1000 * tox_iteration_interval(tox));
+		tox_iterate(tox, NULL);
+	}
 
 	return 0;
 }
