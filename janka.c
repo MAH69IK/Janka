@@ -1,5 +1,22 @@
 #include <tox/tox.h>
 
+const char *const savedata_filename = "janka.tox";
+const char *const savedata_tmp_filename = "janka.tox.tmp";
+
+void update_savedata_file(const Tox *tox) {
+	const size_t size = tox_get_savedata_size(tox);
+	const char *savedata = malloc(size);
+	tox_get_savedata(tox, savedata);
+
+	FILE *f = fopen(savedata_tmp_filename, "wb");
+	fwrite(savedata, size, 1, f);
+	fclose(f);
+
+	free(savedata);
+
+	rename(savedata_tmp_filename, savedata_filename);
+}
+
 void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *user_data) {
 	switch (connection_status) {
 		case TOX_CONNECTION_NONE:
@@ -24,6 +41,8 @@ static void handle_friend_request(Tox *tox, const uint8_t *public_key, const uin
 			TOX_ERR_FRIEND_ADD rezulto_friend_add_norequest;
 
 			tox_friend_add_norequest(tox, public_key, &rezulto_friend_add_norequest);
+			// Делать это только в случае успеха.
+			update_savedata_file(tox);
 			// Переделать на более информативную обработку ошибок, как в tox_new.
 			if (rezulto_friend_add_norequest != TOX_ERR_FRIEND_ADD_OK) {
 				fprintf(stderr, "Не удалось добавить контакт. Код ошибки - %d.\n", rezulto_friend_add_norequest);
@@ -48,49 +67,75 @@ static void handle_friend_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_
 }
 
 int main() {
+	Tox *tox;
+	struct Tox_Options options;
 	TOX_ERR_NEW rezulto_new;
-	// Возможно вынести инициализацию в отдельнюу малюсенькую ф-цию, это позволит повторять попытку
+	// Возможно вынести инициализацию в отдельнюу малюсенькую ф-цию, это позволит повторять попытку.
 
 	// Создаём экземпляр Tox'а.
-	Tox *tox = tox_new(NULL, &rezulto_new);
+
+	tox_options_default(&options);
+
+	FILE *f = fopen(savedata_filename, "rb");
+	if (f) {
+		fseek(f, 0, SEEK_END);
+		long fsize = ftell(f);
+		fseek(f, 0, SEEK_SET);
+
+		char *savedata = malloc(fsize);
+
+		fread(savedata, fsize, 1, f);
+		fclose(f);
+
+		options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
+		options.savedata_data = savedata;
+		options.savedata_length = fsize;
+
+		tox = tox_new(&options, &rezulto_new);
+
+		free(savedata);
+	} else {
+		tox = tox_new(&options, &rezulto_new);
+	}
+
 	switch (rezulto_new) {
 		case TOX_ERR_NEW_MALLOC:
 			fprintf (stderr, "Иницилизация не удалась из-за невозможности выделить память. Код ошибки - %d.\n", rezulto_new);
-			// Вывести информацию о свободной памяти
+			// Вывести информацию о свободной памяти.
 			return 1;
 			break;
 		case TOX_ERR_NEW_PORT_ALLOC:
 			fprintf (stderr, "Иницилизация не удалась из-за невозможности использования порта. Возможно порт занят или не достаточно прав. Код ошибки - %d.\n", rezulto_new);
-			// Вывести сведения о занятости порта и/или правах. Попробовать использовать порты с номерами больше/меньше (настраивать через конфиг)
+			// Вывести сведения о занятости порта и/или правах. Попробовать использовать порты с номерами больше/меньше (настраивать через конфиг).
 			return 1;
 			break;
 		case TOX_ERR_NEW_PROXY_BAD_TYPE:
 			fprintf (stderr, "Иницилизация не удалась - не верно указан тип прокси. Код ошибки - %d.\n", rezulto_new);
-			// Вывести информацию о допустимых значениях и указанном, попробовать повторить без прокси (настраивать через конфиг)
+			// Вывести информацию о допустимых значениях и указанном, попробовать повторить без прокси (настраивать через конфиг).
 			return 1;
 			break;
 		case TOX_ERR_NEW_PROXY_BAD_HOST;
 			fprintf (stderr, "Иницилизация не удалась - не верно указан (или пропущен) адрес прокси при включённом использовании прокси. Код ошибки - %d.\n", rezulto_new);
-			// Вывести информацию об указанном значении, попробовать повторить без прокси (настраивать через конфиг)
+			// Вывести информацию об указанном значении, попробовать повторить без прокси (настраивать через конфиг).
 			return 1;
 			break;
 		case TOX_ERR_NEW_PROXY_BAD_PORT:
 			fprintf (stderr, "Иницилизация не удалась - не верно указан порт прокси. Код ошибки - %d.\n", rezulto_new);
-			// Вывести информацию об указанном значении, попробовать повторить без прокси (настраивать через конфиг)
+			// Вывести информацию об указанном значении, попробовать повторить без прокси (настраивать через конфиг).
 			return 1;
 			break;
 		case TOX_ERR_NEW_LOAD_ENCRYPTED:
 			fprintf (stderr, "Иницилизация не удалась - загружаемые данные зашифрованы. Код ошибки - %d.\n", rezulto_new);
-			// Посмотреть подробнее из-за чего возникает ошибка, что именно зашифровано
+			// Посмотреть подробнее из-за чего возникает ошибка, что именно зашифровано.
 			return 1;
 			break;
 		case TOX_ERR_NEW_LOAD_BAD_FORMAT:
 			fprintf (stderr, "Иницилизация не удалась из-за невозможности загрузки данных. Возможно загружаемые данные принадлежат старой версии Tox'а или они повреждены. Код ошибки - %d.\n", rezulto_new);
-			// Проверить подробнее что за данные, условия ошибки, описат подробнее
+			// Проверить подробнее что за данные, условия ошибки, описат подробнее.
 			return 1;
 			break;
 		case TOX_ERR_NEW_OK;
-			// Тут всё хорошо
+			// Тут всё хорошо.
 			break
 	}
 
@@ -138,7 +183,7 @@ int main() {
 			// Почему unsigned?
 			unsigned char id_2[TOX_PUBLIC_KEY_SIZE];
 		} DHT_retnodo;
- 
+
 		DHT_retnodo retnodoj[] = {
 			{"2a00:7a60:0:746b::3", 33445, "DA4E4ED4B697F2E9B000EEFE3A34B554ACD3F45F5C96EAEA2516DD7FF9AF7B43", {0}}
 		};
@@ -151,6 +196,10 @@ int main() {
 			tox_bootstrap(tox, retnodoj[i].IP, retnodoj[i].pordo, retnooj[i].id_16, &rezulto_bootstrap);
 		}
 	}
+
+	// Сохраняем наши данные.
+	// Это нужно делать лишь при первом запуске, если наш ID ещё не сохранён.
+	update_savedata_file(tox);
 
 	while (true) {
 		tox_iterate(tox, NULL);
