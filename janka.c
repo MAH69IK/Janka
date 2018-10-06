@@ -12,7 +12,7 @@ static void handle_friend_request(Tox *tox, const uint8_t *public_key, const uin
 			tox_friend_add_norequest(tox, public_key, &rezulto_friend_add_norequest);
 			// Переделать на более информативную обработку ошибок, как в tox_new.
 			if (rezulto_friend_add_norequest != TOX_ERR_FRIEND_ADD_OK) {
-				fprintf(stderr, "Не удалось добавить контакт (%d).\n", rezulto_friend_add_norequest);
+				fprintf(stderr, "Не удалось добавить контакт. Код ошибки - %d.\n", rezulto_friend_add_norequest);
 			}
 		}
 		else {
@@ -38,37 +38,37 @@ int main() {
 	Tox *tox = tox_new(NULL, &rezulto_new);
 	switch (rezulto_new) {
 		case TOX_ERR_NEW_MALLOC:
-			fprintf (stderr, "Иницилизация не удалась из-за невозможности выделить память (%s).\n", rezulto_new);
+			fprintf (stderr, "Иницилизация не удалась из-за невозможности выделить память. Код ошибки - %d.\n", rezulto_new);
 			// Вывести информацию о свободной памяти
 			return 1;
 			break;
 		case TOX_ERR_NEW_PORT_ALLOC:
-			fprintf (stderr, "Иницилизация не удалась из-за невозможности использования порта (%s). Возможно порт занят (другим экземпляром Tox'а) или не достаточно прав.\n", rezulto_new);
+			fprintf (stderr, "Иницилизация не удалась из-за невозможности использования порта. Возможно порт занят или не достаточно прав. Код ошибки - %d.\n", rezulto_new);
 			// Вывести сведения о занятости порта и/или правах. Попробовать использовать порты с номерами больше/меньше (настраивать через конфиг)
 			return 1;
 			break;
 		case TOX_ERR_NEW_PROXY_BAD_TYPE:
-			fprintf (stderr, "Иницилизация не удалась - не верно указан тип прокси (%s).\n", rezulto_new);
+			fprintf (stderr, "Иницилизация не удалась - не верно указан тип прокси. Код ошибки - %d.\n", rezulto_new);
 			// Вывести информацию о допустимых значениях и указанном, попробовать повторить без прокси (настраивать через конфиг)
 			return 1;
 			break;
 		case TOX_ERR_NEW_PROXY_BAD_HOST;
-			fprintf (stderr, "Иницилизация не удалась - не верно указан (или вообще пропущен) адрес прокси при включённом использовании прокси (%s).\n", rezulto_new);
+			fprintf (stderr, "Иницилизация не удалась - не верно указан (или пропущен) адрес прокси при включённом использовании прокси. Код ошибки - %d.\n", rezulto_new);
 			// Вывести информацию об указанном значении, попробовать повторить без прокси (настраивать через конфиг)
 			return 1;
 			break;
 		case TOX_ERR_NEW_PROXY_BAD_PORT:
-			fprintf (stderr, "Иницилизация не удалась - не верно указан порт прокси (%s).\n", rezulto_new);
+			fprintf (stderr, "Иницилизация не удалась - не верно указан порт прокси. Код ошибки - %d.\n", rezulto_new);
 			// Вывести информацию об указанном значении, попробовать повторить без прокси (настраивать через конфиг)
 			return 1;
 			break;
 		case TOX_ERR_NEW_LOAD_ENCRYPTED:
-			fprintf (stderr, "Иницилизация не удалась - загружаемые данные зашифрованы (%s).\n", rezulto_new);
+			fprintf (stderr, "Иницилизация не удалась - загружаемые данные зашифрованы. Код ошибки - %d.\n", rezulto_new);
 			// Посмотреть подробнее из-за чего возникает ошибка, что именно зашифровано
 			return 1;
 			break;
 		case TOX_ERR_NEW_LOAD_BAD_FORMAT:
-			fprintf (stderr, "Иницилизация не удалась из-за невозможности загрузки данных (%s). Возможно загружаемые данные принадлежат старой версии Tox'а или данные повреждены.\n", rezulto_new);
+			fprintf (stderr, "Иницилизация не удалась из-за невозможности загрузки данных. Возможно загружаемые данные принадлежат старой версии Tox'а или они повреждены. Код ошибки - %d.\n", rezulto_new);
 			// Проверить подробнее что за данные, условия ошибки, описат подробнее
 			return 1;
 			break;
@@ -118,7 +118,8 @@ int main() {
 			const char *IP;
 			uint16_t pordo;
 			const char id_16[TOX_PUBLIC_KEY_SIZE * 2 + 1];
-			unsigned char id_2[TOX_PUBLIC_KEY_SIZE]; //Почему unsigned?
+			// Почему unsigned?
+			unsigned char id_2[TOX_PUBLIC_KEY_SIZE];
 		} DHT_retnodo;
  
 		DHT_retnodo retnodoj[] = {
@@ -129,7 +130,7 @@ int main() {
 
 		for (size_t i = 0; i < sizeof(retnodoj) / sizeof(DHT_retnodo); i++) {
 			sodium_hex2bin(retnodoj[i].id_2, sizeof(retnodoj[i].id_2), retnodoj[i].id_16, sizeof(retnodoj[i].id_16) - 1);
-			// Результат - bool, его надо проверять.
+			// Результат - bool, его надо проверять. Как и обработать rezulto_bootstrap.
 			tox_bootstrap(tox, retnodoj[i].IP, retnodoj[i].pordo, retnooj[i].id_16, &rezulto_bootstrap);
 }
 	}
