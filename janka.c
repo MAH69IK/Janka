@@ -1,11 +1,23 @@
 #include <tox/tox.h>
 
+// Почему static void?
 static void handle_friend_request(Tox *tox, const uint8_t *public_key, const uint8_t *message, size_t length, void *user_data) {
-	// Нужно проверить, что секретный код, переданный в тексте запросе, совпадает с секретным кодом, сохранённом в конфиге, что бы не добавлять всех подряд.
-	TOX_ERR_FRIEND_ADD err_friend_add;
-	tox_friend_add_norequest(tox, public_key, &err_friend_add);
-	if (err_friend_add != TOX_ERR_FRIEND_ADD_OK) {
-		fprintf(stderr, "unable to add friend: %d\n", err_friend_add);
+	// Запрос принимается только от тех, кто прислал в запросе секретную фразу.
+	if (message) {
+		// Конечно же это надо будет читать из конфигурационного файла.
+		const char *const sekreto = "werx#@978";
+		if (strcmp(message, sekreto) == 0) {
+			TOX_ERR_FRIEND_ADD rezulto_friend_add_norequest;
+
+			tox_friend_add_norequest(tox, public_key, &rezulto_friend_add_norequest);
+			// Переделать на более информативную обработку ошибок, как в tox_new.
+			if (rezulto_friend_add_norequest != TOX_ERR_FRIEND_ADD_OK) {
+				fprintf(stderr, "Не удалось добавить контакт (%d).\n", rezulto_friend_add_norequest);
+			}
+		}
+		else {
+			fprintf(stderr, "Неверная секретная фраза. Переданное значение: \"%s\".\n", message);
+		}
 	}
 }
 
@@ -65,26 +77,31 @@ int main() {
 			break
 	}
 
-	// Получаем наш Tox ID.
-	uint8_t tox_id_bin[TOX_ADDRESS_SIZE];
-	tox_self_get_address(tox, tox_id_bin);
+	// Записываем наш Tox ID.
+	{
+		// Получаем наш Tox ID.
+		uint8_t tox_id_2[TOX_ADDRESS_SIZE];
+		tox_self_get_address(tox, tox_id_2);
 
-	// Ф-ция tox_self_get_address() возвращает Tox ID в бинарном виде, преобразовываем его в шестнадцатиричный.
-	char tox_id_hex[TOX_ADDRESS_SIZE * 2 + 1];
-	sodium_bin2hex(tox_id_hex, sizeof(tox_id_hex), tox_id_bin, sizeof(tox_id_bin));
+		// Ф-ция tox_self_get_address() возвращает Tox ID в бинарном виде, преобразовываем его в шестнадцатиричный.
+		char tox_id_16[TOX_ADDRESS_SIZE * 2 + 1];
+		sodium_bin2hex(tox_id_16, sizeof(tox_id_16), tox_id_2, sizeof(tox_id_2));
 
-	// Ф-ция sodium_bin2hex() вернула идентификатор с буквами нижнего регистра, но Tox ID записывается с использованием верхнего регистра, меняем.
-	for (size_t i = 0; i < sizeof(tox_id_hex) - 1; i++) {
-		tox_id_hex[i] = toupper(tox_id_hex[i]);
+		// Ф-ция sodium_bin2hex() вернула идентификатор с буквами нижнего регистра, но Tox ID записывается с использованием верхнего регистра, меняем.
+		for (size_t i = 0; i < sizeof(tox_id_16) - 1; i++) {
+			tox_id_16[i] = toupper(tox_id_16[i]);
+		}
+
+		// Записываем наш идентификатор в журнал.
+		fprintf (stdout, "Мой Tox ID: %s.\n", tox_id_16);
 	}
 
-	// Записываем наш идентификатор в журнал.
-	fprintf (stdout, "Мой Tox ID: %s.\n", tox_id_hex);
-
 	// Задаём имя нашему экземпляру Tox'а.
-	char const *const nomo = "Янка";
-	// Если имя будет браться из конфига, то в 4-ом параметре надо передавать переменную типа TOX_ERR_SET_INFO и затем проверять её (либо самостоятельно проверять длину имени вначале).
-	tox_self_set_name(tox, nomo, strlen(nomo), NULL);
+	{
+		const char *const nomo = "Янка";
+		// Если имя будет браться из конфига, то в 4-ом параметре надо передавать переменную типа TOX_ERR_SET_INFO и затем проверять её (либо самостоятельно проверять длину имени вначале).
+		tox_self_set_name(tox, nomo, strlen(nomo), NULL);
+	}
 
 	// Регистрируем ф-ции обратного вызова.
 	// handle_self_connection_status - для обработки потери соединения;
@@ -96,9 +113,26 @@ int main() {
 	tox_callback_friend_message(tox, handle_friend_message);
 
 	// Подключаемся к Сети.
-	// Результат - bool, проверить.
-	// Порт и ключ преобразовать.
-	tox_bootstrap(tox, "2a00:7a60:0:746b::3", 33445, "DA4E4ED4B697F2E9B000EEFE3A34B554ACD3F45F5C96EAEA2516DD7FF9AF7B43", TOX_ERR_BOOTSTRAP rezulto_bootstrap);
+	{
+		typedef struct DHT_retnodo {
+			const char *IP;
+			uint16_t pordo;
+			const char id_16[TOX_PUBLIC_KEY_SIZE * 2 + 1];
+			unsigned char id_2[TOX_PUBLIC_KEY_SIZE]; //Почему unsigned?
+		} DHT_retnodo;
+ 
+		DHT_retnodo retnodoj[] = {
+			{"2a00:7a60:0:746b::3", 33445, "DA4E4ED4B697F2E9B000EEFE3A34B554ACD3F45F5C96EAEA2516DD7FF9AF7B43", {0}}
+		};
+
+		TOX_ERR_BOOTSTRAP rezulto_bootstrap;
+
+		for (size_t i = 0; i < sizeof(retnodoj) / sizeof(DHT_retnodo); i++) {
+			sodium_hex2bin(retnodoj[i].id_2, sizeof(retnodoj[i].id_2), retnodoj[i].id_16, sizeof(retnodoj[i].id_16) - 1);
+			// Результат - bool, его надо проверять.
+			tox_bootstrap(tox, retnodoj[i].IP, retnodoj[i].pordo, retnooj[i].id_16, &rezulto_bootstrap);
+}
+	}
 
 	while (true) {
 		usleep(1000 * tox_iteration_interval(tox));
