@@ -43,7 +43,7 @@ static void handle_friend_request(Tox *tox, const uint8_t *public_key, const uin
 	// Запрос принимается только от тех, кто прислал в запросе секретную фразу.
 	if (message) {
 		// Конечно же это надо будет читать из конфигурационного файла.
-		const uint8_t` *const sekreto = "werx#@978";
+		const uint8_t *const sekreto = "werx#@978";
 		if (strcmp(message, sekreto) == 0) {
 			TOX_ERR_FRIEND_ADD rezulto_friend_add_norequest;
 
