@@ -1,3 +1,10 @@
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#includ <sodium/utils.h>
 #include <tox/tox.h>
 
 const char *const savedata_filename = "janka.tox";
@@ -185,7 +192,7 @@ int main() {
 		} DHT_retnodo;
 
 		DHT_retnodo retnodoj[] = {
-			{"2a00:7a60:0:746b::3", 33445, "DA4E4ED4B697F2E9B000EEFE3A34B554ACD3F45F5C96EAEA2516DD7FF9AF7B43", {0}}
+			{"2a00:7a60:0:746b::3", 33446, "DA4E4ED4B697F2E9B000EEFE3A34B554ACD3F45F5C96EAEA2516DD7FF9AF7B43", {0}}
 		};
 
 		TOX_ERR_BOOTSTRAP rezulto_bootstrap;
@@ -193,7 +200,7 @@ int main() {
 		for (size_t i = 0; i < sizeof(retnodoj) / sizeof(DHT_retnodo); i++) {
 			sodium_hex2bin(retnodoj[i].id_2, sizeof(retnodoj[i].id_2), retnodoj[i].id_16, sizeof(retnodoj[i].id_16) - 1);
 			// Результат - bool, его надо проверять. Как и обработать rezulto_bootstrap.
-			tox_bootstrap(tox, retnodoj[i].IP, retnodoj[i].pordo, retnooj[i].id_16, &rezulto_bootstrap);
+			tox_bootstrap(tox, retnodoj[i].IP, retnodoj[i].pordo, retnodoj[i].id_16, &rezulto_bootstrap);
 		}
 	}
 
