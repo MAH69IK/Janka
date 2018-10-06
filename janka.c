@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#includ <sodium/utils.h>
+#include <sodium/utils.h>
 #include <tox/tox.h>
 
 const char *const savedata_filename = "janka.tox";
@@ -12,7 +12,7 @@ const char *const savedata_tmp_filename = "janka.tox.tmp";
 
 void update_savedata_file(const Tox *tox) {
 	const size_t size = tox_get_savedata_size(tox);
-	const char *savedata = malloc(size);
+	char *savedata = malloc(size);
 	tox_get_savedata(tox, savedata);
 
 	FILE *f = fopen(savedata_tmp_filename, "wb");
@@ -43,7 +43,7 @@ static void handle_friend_request(Tox *tox, const uint8_t *public_key, const uin
 	// Запрос принимается только от тех, кто прислал в запросе секретную фразу.
 	if (message) {
 		// Конечно же это надо будет читать из конфигурационного файла.
-		const char *const sekreto = "werx#@978";
+		const uint8_t` *const sekreto = "werx#@978";
 		if (strcmp(message, sekreto) == 0) {
 			TOX_ERR_FRIEND_ADD rezulto_friend_add_norequest;
 
@@ -89,7 +89,7 @@ int main() {
 		long fsize = ftell(f);
 		fseek(f, 0, SEEK_SET);
 
-		char *savedata = malloc(fsize);
+		uint8_t *savedata = malloc(fsize);
 
 		fread(savedata, fsize, 1, f);
 		fclose(f);
@@ -121,7 +121,7 @@ int main() {
 			// Вывести информацию о допустимых значениях и указанном, попробовать повторить без прокси (настраивать через конфиг).
 			return 1;
 			break;
-		case TOX_ERR_NEW_PROXY_BAD_HOST;
+		case TOX_ERR_NEW_PROXY_BAD_HOST:
 			fprintf (stderr, "Иницилизация не удалась - не верно указан (или пропущен) адрес прокси при включённом использовании прокси. Код ошибки - %d.\n", rezulto_new);
 			// Вывести информацию об указанном значении, попробовать повторить без прокси (настраивать через конфиг).
 			return 1;
@@ -141,9 +141,9 @@ int main() {
 			// Проверить подробнее что за данные, условия ошибки, описат подробнее.
 			return 1;
 			break;
-		case TOX_ERR_NEW_OK;
+		case TOX_ERR_NEW_OK:
 			// Тут всё хорошо.
-			break
+			break;
 	}
 
 	// Записываем наш Tox ID.
