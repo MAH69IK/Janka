@@ -1,5 +1,19 @@
 #include <tox/tox.h>
 
+void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *user_data) {
+	switch (connection_status) {
+		case TOX_CONNECTION_NONE:
+			fprintf(stdout, "Offline\n");
+			break;
+		case TOX_CONNECTION_TCP:
+			fprintf(stdout, "Online, using TCP\n");
+			break;
+		case TOX_CONNECTION_UDP:
+			fprintf(stdout, "Online, using UDP\n");
+			break;
+	}
+}
+
 // Почему static void?
 static void handle_friend_request(Tox *tox, const uint8_t *public_key, const uint8_t *message, size_t length, void *user_data) {
 	// Запрос принимается только от тех, кто прислал в запросе секретную фразу.
@@ -21,12 +35,15 @@ static void handle_friend_request(Tox *tox, const uint8_t *public_key, const uin
 	}
 }
 
+// Почему static?
 static void handle_friend_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type, const uint8_t *message, size_t length, void *user_data) {
 	// Пример из документации, который просто отсылает сообщение назад. Нужно будет переделать под обработку полученных сообщений.
-	TOX_ERR_FRIEND_SEND_MESSAGE err_send;
-	tox_friend_send_message(tox, friend_number, type, message, length, &err_send);
-	if (err_send != TOX_ERR_FRIEND_SEND_MESSAGE_OK) {
-		fprintf(stderr, "unable to send message back to friend %d: %d\n", friend_number, err_send);
+	TOX_ERR_FRIEND_SEND_MESSAGE rezulto_friend_send_message;
+
+	tox_friend_send_message(tox, friend_number, type, message, length, &rezulto_friend_send_message);
+	// Переделать на более информативную обработку ошибок, как в tox_new.
+	if (rezulto_friend_send_message != TOX_ERR_FRIEND_SEND_MESSAGE_OK) {
+		fprintf(stderr, "Невозможно отправить сообщение. Код ошибки - %d.\n", rezulto_friend_send_message);
 	}
 }
 
@@ -132,13 +149,16 @@ int main() {
 			sodium_hex2bin(retnodoj[i].id_2, sizeof(retnodoj[i].id_2), retnodoj[i].id_16, sizeof(retnodoj[i].id_16) - 1);
 			// Результат - bool, его надо проверять. Как и обработать rezulto_bootstrap.
 			tox_bootstrap(tox, retnodoj[i].IP, retnodoj[i].pordo, retnooj[i].id_16, &rezulto_bootstrap);
-}
+		}
 	}
 
 	while (true) {
-		usleep(1000 * tox_iteration_interval(tox));
 		tox_iterate(tox, NULL);
+		// 1 000 - это что?
+		usleep(tox_iteration_interval(tox) * 1000);
 	}
+
+	tox_kill(tox);
 
 	return 0;
 }
