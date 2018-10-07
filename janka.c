@@ -12,7 +12,7 @@ const char *const savedata_tmp_filename = "janka.tox.tmp";
 
 void update_savedata_file(const Tox *tox) {
 	const size_t size = tox_get_savedata_size(tox);
-	char *savedata = malloc(size);
+	uint8_t *savedata = malloc(size);
 	tox_get_savedata(tox, savedata);
 
 	FILE *f = fopen(savedata_tmp_filename, "wb");
@@ -43,7 +43,7 @@ static void handle_friend_request(Tox *tox, const uint8_t *public_key, const uin
 	// Запрос принимается только от тех, кто прислал в запросе секретную фразу.
 	if (message) {
 		// Конечно же это надо будет читать из конфигурационного файла.
-		const uint8_t *const sekreto = "werx#@978";
+		const int8_t *const sekreto = "werx#@978";
 		if (strcmp(message, sekreto) == 0) {
 			TOX_ERR_FRIEND_ADD rezulto_friend_add_norequest;
 
@@ -167,7 +167,7 @@ int main() {
 
 	// Задаём имя нашему экземпляру Tox'а.
 	{
-		const char *const nomo = "Янка";
+		const uint8_t *const nomo = "Янка";
 		// Если имя будет браться из конфига, то в 4-ом параметре надо передавать переменную типа TOX_ERR_SET_INFO и затем проверять её (либо самостоятельно проверять длину имени вначале).
 		tox_self_set_name(tox, nomo, strlen(nomo), NULL);
 	}
@@ -186,7 +186,7 @@ int main() {
 		typedef struct DHT_retnodo {
 			const char *IP;
 			uint16_t pordo;
-			const char id_16[TOX_PUBLIC_KEY_SIZE * 2 + 1];
+			const uint8_t id_16[TOX_PUBLIC_KEY_SIZE * 2 + 1];
 			// Почему unsigned?
 			unsigned char id_2[TOX_PUBLIC_KEY_SIZE];
 		} DHT_retnodo;
@@ -198,7 +198,7 @@ int main() {
 		TOX_ERR_BOOTSTRAP rezulto_bootstrap;
 
 		for (size_t i = 0; i < sizeof(retnodoj) / sizeof(DHT_retnodo); i++) {
-			sodium_hex2bin(retnodoj[i].id_2, sizeof(retnodoj[i].id_2), retnodoj[i].id_16, sizeof(retnodoj[i].id_16) - 1);
+			sodium_hex2bin(retnodoj[i].id_2, sizeof(retnodoj[i].id_2), retnodoj[i].id_16, sizeof(retnodoj[i].id_16) - 1, NULL, NULL, NULL);
 			// Результат - bool, его надо проверять. Как и обработать rezulto_bootstrap.
 			tox_bootstrap(tox, retnodoj[i].IP, retnodoj[i].pordo, retnodoj[i].id_16, &rezulto_bootstrap);
 		}
