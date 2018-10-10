@@ -105,46 +105,60 @@ int main() {
 		tox = tox_new(&options, &rezulto_new);
 	}
 
+	// return или exit? В чём разница? А может abort?
 	switch (rezulto_new) {
+		case TOX_ERR_NEW_OK:
+			// Тут всё хорошо.
+			fprintf (stdout, "Инициализация успешна.\n");
+			// Вывести информацию о том использовались ли ранее сохранённые данные или нет.
+			break;
+		case TOX_ERR_SET_INFO_NULL:
+			fprintf (stderr, "Ошибка инициализации: один из аргументов ф-ции инициализации не указан (NULL). Код ошибки - %d.\n", rezulto_self_set_name);
+			// Возможно задавать стандартное имя в таких случаях. Или через конфиг.
+			return 1;
+			break;
 		case TOX_ERR_NEW_MALLOC:
-			fprintf (stderr, "Иницилизация не удалась из-за невозможности выделить память. Код ошибки - %d.\n", rezulto_new);
+			fprintf (stderr, "Ошибка инициализации: не удалось выделить память. Код ошибки - %d.\n", rezulto_new);
 			// Вывести информацию о свободной памяти.
 			return 1;
 			break;
 		case TOX_ERR_NEW_PORT_ALLOC:
-			fprintf (stderr, "Иницилизация не удалась из-за невозможности использования порта. Возможно порт занят или не достаточно прав. Код ошибки - %d.\n", rezulto_new);
+			fprintf (stderr, "Ошибка инциализации: не удалось привязаться к порту. Возможно порт занят или не достаточно прав. Код ошибки - %d.\n", rezulto_new);
 			// Вывести сведения о занятости порта и/или правах. Попробовать использовать порты с номерами больше/меньше (настраивать через конфиг).
 			return 1;
 			break;
 		case TOX_ERR_NEW_PROXY_BAD_TYPE:
-			fprintf (stderr, "Иницилизация не удалась - не верно указан тип прокси. Код ошибки - %d.\n", rezulto_new);
+			fprintf (stderr, "Ошибка инициализации: не верно указан тип прокси. Код ошибки - %d.\n", rezulto_new);
 			// Вывести информацию о допустимых значениях и указанном, попробовать повторить без прокси (настраивать через конфиг).
 			return 1;
 			break;
 		case TOX_ERR_NEW_PROXY_BAD_HOST:
-			fprintf (stderr, "Иницилизация не удалась - не верно указан (или пропущен) адрес прокси при включённом использовании прокси. Код ошибки - %d.\n", rezulto_new);
+			// Избавиться от неоднозначности.
+			fprintf (stderr, "Ошибка инициализации: требуется проксирование, но адрес прокси указан не верно или пропущен. Код ошибки - %d.\n", rezulto_new);
 			// Вывести информацию об указанном значении, попробовать повторить без прокси (настраивать через конфиг).
 			return 1;
 			break;
 		case TOX_ERR_NEW_PROXY_BAD_PORT:
-			fprintf (stderr, "Иницилизация не удалась - не верно указан порт прокси. Код ошибки - %d.\n", rezulto_new);
+			fprintf (stderr, "Ошибка инициализации: требуется проксирование, но порт прокси указан не верно. Код ошибки - %d.\n", rezulto_new);
 			// Вывести информацию об указанном значении, попробовать повторить без прокси (настраивать через конфиг).
 			return 1;
 			break;
 		case TOX_ERR_NEW_LOAD_ENCRYPTED:
-			fprintf (stderr, "Иницилизация не удалась - загружаемые данные зашифрованы. Код ошибки - %d.\n", rezulto_new);
+			fprintf (stderr, "Ошибка инициализации: загружаемые данные зашифрованы. Код ошибки - %d.\n", rezulto_new);
 			// Посмотреть подробнее из-за чего возникает ошибка, что именно зашифровано.
 			return 1;
 			break;
 		case TOX_ERR_NEW_LOAD_BAD_FORMAT:
-			fprintf (stderr, "Иницилизация не удалась из-за невозможности загрузки данных. Возможно загружаемые данные принадлежат старой версии Tox'а или они повреждены. Код ошибки - %d.\n", rezulto_new);
+			fprintf (stderr, "Ошибка инициализации: не удалось загрузить данные. Возможно загружаемые данные принадлежат старой версии Tox'а или они повреждены. Код ошибки - %d.\n", rezulto_new);
 			// Проверить подробнее что за данные, условия ошибки, описат подробнее.
 			return 1;
 			break;
-		case TOX_ERR_NEW_OK:
-			// Тут всё хорошо.
+		default:
+			fprintf (stderr, "Произошла неучтённая ошибка инциализации. Скорее всего это результат обновления ядра Tox'а. Код ошибки - %d.\n", rezulto_new);
+			return 1;
 			break;
 	}
+	// rezulto_new больше не требуется, необходимо избавиться от переменной.
 
 	// Записываем наш Tox ID.
 	{
@@ -162,14 +176,35 @@ int main() {
 		}
 
 		// Записываем наш идентификатор в журнал.
-		fprintf (stdout, "Мой Tox ID: %s.\n", tox_id_16);
+		fprintf (stdout, "Мой Tox ID: %s\n", tox_id_16);
 	}
 
 	// Задаём имя нашему экземпляру Tox'а.
 	{
 		const uint8_t *const nomo = "Янка";
-		// Если имя будет браться из конфига, то в 4-ом параметре надо передавать переменную типа TOX_ERR_SET_INFO и затем проверять её (либо самостоятельно проверять длину имени вначале).
-		tox_self_set_name(tox, nomo, strlen(nomo), NULL);
+		TOX_ERR_SET_INFO rezulto_self_set_name;
+		
+		tox_self_set_name(tox, nomo, strlen(nomo), &rezulto_self_set_name);
+
+		switch (rezulto_self_set_name) {
+			case TOX_ERR_SET_INFO_OK:
+				fprintf (stdout, "Задано имя: %s.\n", nomo);
+				break;
+			case TOX_ERR_SET_INFO_NULL:
+				fprintf (stderr, "Ошибка задания имени: задаваемое имя не указано (NULL). Код ошибки - %d.\n", rezulto_self_set_name);
+				// Возможно задавать стандартное имя в таких случаях. Или через конфиг.
+				return 1;
+				break;
+			case TOX_ERR_SET_INFO_TOO_LONG:
+				fprintf (stderr, "Ошибка задания имени: имя превышает допустимый размер. Код ошибки - %d.\n", rezulto_self_set_name);
+				// Вывести информацию о макс. длине и длине имени.
+				return 1;
+				break;
+			default:
+				fprintf (stderr, "Произошла неучтённая ошибка задания имени. Скорее всего это результат обновления ядра Tox'а. Код ошибки - %d.\n", rezulto_self_set_name);
+				return 1;
+				break;
+		}
 	}
 
 	// Регистрируем ф-ции обратного вызова.
@@ -187,20 +222,40 @@ int main() {
 			const char *IP;
 			uint16_t pordo;
 			const uint8_t id_16[TOX_PUBLIC_KEY_SIZE * 2 + 1];
-			// Почему unsigned?
 			unsigned char id_2[TOX_PUBLIC_KEY_SIZE];
 		} DHT_retnodo;
-
 		DHT_retnodo retnodoj[] = {
 			{"2a00:7a60:0:746b::3", 33446, "DA4E4ED4B697F2E9B000EEFE3A34B554ACD3F45F5C96EAEA2516DD7FF9AF7B43", {0}}
 		};
-
 		TOX_ERR_BOOTSTRAP rezulto_bootstrap;
 
 		for (size_t i = 0; i < sizeof(retnodoj) / sizeof(DHT_retnodo); i++) {
 			sodium_hex2bin(retnodoj[i].id_2, sizeof(retnodoj[i].id_2), retnodoj[i].id_16, sizeof(retnodoj[i].id_16) - 1, NULL, NULL, NULL);
 			// Результат - bool, его надо проверять. Как и обработать rezulto_bootstrap.
 			tox_bootstrap(tox, retnodoj[i].IP, retnodoj[i].pordo, retnodoj[i].id_16, &rezulto_bootstrap);
+
+			switch (rezulto_bootstrap) {
+				case TOX_ERR_BOOTSTRAP_OK:
+					fprintf (stdout, "Успешное подключение к узлу %s:%d.\n", retnodoj[i].IP, retnodoj[i].pordo);
+					break;
+				case TOX_ERR_BOOTSTRAP_NULL:
+					fprintf (stderr, "Ошибка подключения к узлу: один из аргументов ф-ции подключения не указан (NULL). Код ошибки - %d.\n", rezulto_bootstrap);
+					// Проверить аргументы, вывести более детальную информацию.
+					return 1;
+					break;
+				case TOX_ERR_BOOTSTRAP_BAD_HOST:
+					fprintf (stderr, "Ошибка подключения к узлу %s:%d: не удалось определить IP по имени, либо переданный IP некорректен. Код ошибки - %d.\n", retnodoj[i].IP, retnodoj[i].pordo, rezulto_bootstrap);
+					return 1;
+					break;
+				case TOX_ERR_BOOTSTRAP_BAD_PORT:
+					fprintf (stderr, "Ошибка подключения к узлу %s: указанный порт (%d) некорректен. Допустимое значение - от 1 до 65 535. Код ошибки - %d.\n", retnodoj[i].IP, retnodoj[i].pordo, rezulto_bootstrap);
+					return 1;
+					break;
+				default:
+					fprintf (stderr, "Произошла неучтённая ошибка подключения к узлу. Скорее всего это результат обновления ядра Tox'а. Код ошибки - %d.\n", rezulto_bootstrap);
+					return 1;
+					break;
+			}
 		}
 	}
 
