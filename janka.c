@@ -39,34 +39,66 @@ void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_status, v
 }
 
 // Почему static void?
-static void handle_friend_request(Tox *tox, const uint8_t *public_key, const uint8_t *message, size_t length, void *user_data) {
+static void retrovoko_amikigxi(Tox *tox, const uint8_t *sxlosilo, const uint8_t *mesagxo, size_t length, void *user_data) {
 	// Запрос принимается только от тех, кто прислал в запросе секретную фразу.
-	if (message) {
+	if (mesagxo) {
 		// Конечно же это надо будет читать из конфигурационного файла.
 		const int8_t *const sekreto = "werx#@978";
-		if (strcmp(message, sekreto) == 0) {
+		if (strcmp(mesagxo, sekreto) == 0) {
 			TOX_ERR_FRIEND_ADD rezulto_friend_add_norequest;
 
-			tox_friend_add_norequest(tox, public_key, &rezulto_friend_add_norequest);
-			// Делать это только в случае успеха.
-			update_savedata_file(tox);
-			// Переделать на более информативную обработку ошибок, как в tox_new.
-			if (rezulto_friend_add_norequest != TOX_ERR_FRIEND_ADD_OK) {
-				fprintf(stderr, "Не удалось добавить контакт. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+			tox_friend_add_norequest(tox, sxlosilo, &rezulto_friend_add_norequest);
+
+			switch (rezulto_friend_add_norequest) {
+				case TOX_ERR_FRIEND_ADD_OK:
+					fprintf (stdout, "Добавлен контакт %s.\n", sxlosilo);
+					update_savedata_file(tox);
+					break;
+				case TOX_ERR_FRIEND_ADD_NULL:
+					// Проверить аргументы, вывести более детальную информацию.
+					fprintf (stderr, "Ошибка добавления контакта: один из аргументов ф-ции добавления не указан (NULL). Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					break;
+				case TOX_ERR_FRIEND_ADD_TOO_LONG:
+					fprintf (stderr, "Ошибка добавления контакта: превышена длина сообщения. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					break;
+				case TOX_ERR_FRIEND_ADD_NO_MESSAGE:
+					fprintf (stderr, "Ошибка добавления контакта: отсутствует сообщение запроса. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					break;
+				case TOX_ERR_FRIEND_ADD_OWN_KEY:
+					fprintf (stderr, "Ошибка добавления контакта: запрос послан самому себе (использован собственный идентификатор). Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					break;
+				case TOX_ERR_FRIEND_ADD_ALREADY_SENT:
+					fprintf (stderr, "Ошибка добавления контакта: запрос уже послан, либо контакт уже находится в списке контактов. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					break;
+				case TOX_ERR_FRIEND_ADD_BAD_CHECKSUM:
+					fprintf (stderr, "Ошибка добавления контакта: несовпадение контрольной суммы идентификатора контакта. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					break;
+				case TOX_ERR_FRIEND_ADD_SET_NEW_NOSPAM:
+					fprintf (stderr, "Ошибка добавления контакта: изменилось значение поля \"антиспам\" идентификатора контакта. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					break;
+				case TOX_ERR_FRIEND_ADD_MALLOC:
+					fprintf (stderr, "Ошибка добавления контакта: не удалось выделить память для увеличения списка контактов. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					break;
+				default:
+					fprintf (stderr, "Произошла неучтённая ошибка добавления контакта. Скорее всего это результат обновления ядра Tox'а. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					break;
 			}
 		}
 		else {
-			fprintf(stderr, "Неверная секретная фраза. Переданное значение: \"%s\".\n", message);
+			fprintf (stderr, "Поступил запрос на добавление в список контактов от абонента %s, но запрос содержал неверную секретную фразу. Переданная фраза: \"%s\".\n", sxlosilo, mesagxo);
 		}
+	}
+	else {
+		fprintf (stderr, "Поступил запрос на добавление в список контактов от абонента %s, но запрос не содержал секретной фразы.\n", sxlosilo);
 	}
 }
 
 // Почему static?
-static void handle_friend_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type, const uint8_t *message, size_t length, void *user_data) {
+static void handle_friend_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type, const uint8_t *mesagxo, size_t length, void *user_data) {
 	// Пример из документации, который просто отсылает сообщение назад. Нужно будет переделать под обработку полученных сообщений.
 	TOX_ERR_FRIEND_SEND_MESSAGE rezulto_friend_send_message;
 
-	tox_friend_send_message(tox, friend_number, type, message, length, &rezulto_friend_send_message);
+	tox_friend_send_message(tox, friend_number, type, mesagxo, length, &rezulto_friend_send_message);
 	// Переделать на более информативную обработку ошибок, как в tox_new.
 	if (rezulto_friend_send_message != TOX_ERR_FRIEND_SEND_MESSAGE_OK) {
 		fprintf(stderr, "Невозможно отправить сообщение. Код ошибки - %d.\n", rezulto_friend_send_message);
@@ -112,9 +144,9 @@ int main() {
 			fprintf (stdout, "Инициализация успешна.\n");
 			// Вывести информацию о том использовались ли ранее сохранённые данные или нет.
 			break;
-		case TOX_ERR_SET_INFO_NULL:
-			fprintf (stderr, "Ошибка инициализации: один из аргументов ф-ции инициализации не указан (NULL). Код ошибки - %d.\n", rezulto_self_set_name);
-			// Возможно задавать стандартное имя в таких случаях. Или через конфиг.
+		case TOX_ERR_NEW_NULL:
+			// Проверить аргументы, вывести более детальную информацию.
+			fprintf (stderr, "Ошибка инициализации: один из аргументов ф-ции инициализации не указан (NULL). Код ошибки - %d.\n", rezulto_new);
 			return 1;
 			break;
 		case TOX_ERR_NEW_MALLOC:
@@ -191,8 +223,8 @@ int main() {
 				fprintf (stdout, "Задано имя: %s.\n", nomo);
 				break;
 			case TOX_ERR_SET_INFO_NULL:
-				fprintf (stderr, "Ошибка задания имени: задаваемое имя не указано (NULL). Код ошибки - %d.\n", rezulto_self_set_name);
 				// Возможно задавать стандартное имя в таких случаях. Или через конфиг.
+				fprintf (stderr, "Ошибка задания имени: задаваемое имя не указано (NULL). Код ошибки - %d.\n", rezulto_self_set_name);
 				return 1;
 				break;
 			case TOX_ERR_SET_INFO_TOO_LONG:
@@ -213,7 +245,7 @@ int main() {
 	// handle_friend_message - для обработки входящих сообщений.
 	// Возможно в будущем добавить настраиваемую опцию отправки сообщения при появлении контакта в Сети.
 	tox_callback_self_connection_status(tox, handle_self_connection_status);
-	tox_callback_friend_request(tox, handle_friend_request);
+	tox_callback_friend_request(tox, retrovoko_amikigxi);
 	tox_callback_friend_message(tox, handle_friend_message);
 
 	// Подключаемся к Сети.
@@ -239,8 +271,8 @@ int main() {
 					fprintf (stdout, "Успешное подключение к узлу %s:%d.\n", retnodoj[i].IP, retnodoj[i].pordo);
 					break;
 				case TOX_ERR_BOOTSTRAP_NULL:
-					fprintf (stderr, "Ошибка подключения к узлу: один из аргументов ф-ции подключения не указан (NULL). Код ошибки - %d.\n", rezulto_bootstrap);
 					// Проверить аргументы, вывести более детальную информацию.
+					fprintf (stderr, "Ошибка подключения к узлу: один из аргументов ф-ции подключения не указан (NULL). Код ошибки - %d.\n", rezulto_bootstrap);
 					return 1;
 					break;
 				case TOX_ERR_BOOTSTRAP_BAD_HOST:
