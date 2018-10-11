@@ -175,6 +175,11 @@ int main() {
 			// Вывести информацию об указанном значении, попробовать повторить без прокси (настраивать через конфиг).
 			return 1;
 			break;
+		case TOX_ERR_NEW_PROXY_NOT_FOUND:
+			// Вывести информацию о заданном имени.
+			fprintf (stderr, "Ошибка инициализации: не удалось получить IP для заданного имени прокси. Код ошибки - %d.\n", rezulto_new);
+			return 1;
+			break;
 		case TOX_ERR_NEW_LOAD_ENCRYPTED:
 			fprintf (stderr, "Ошибка инициализации: загружаемые данные зашифрованы. Код ошибки - %d.\n", rezulto_new);
 			// Посмотреть подробнее из-за чего возникает ошибка, что именно зашифровано.
@@ -257,7 +262,12 @@ int main() {
 			unsigned char id_2[TOX_PUBLIC_KEY_SIZE];
 		} DHT_retnodo;
 		DHT_retnodo retnodoj[] = {
-			{"2a00:7a60:0:746b::3", 33446, "DA4E4ED4B697F2E9B000EEFE3A34B554ACD3F45F5C96EAEA2516DD7FF9AF7B43", {0}}
+			{"2a00:7a60:0:746b::3", 33446, "DA4E4ED4B697F2E9B000EEFE3A34B554ACD3F45F5C96EAEA2516DD7FF9AF7B43", {0}},
+			{"2605:6400:1:fed5:22:45af:ec10:f329", 33445, "1D5A5F2F5D6233058BF0259B09622FB40B482E4FA0931EB8FD3AB8E7BF7DAF6F", {0}},
+			{"2001:1470:fbfe::109", 33445, "3CEE1F054081E7A011234883BC4FC39F661A55B73637A5AC293DDF1251D9432B", {0}},
+			{"2a06:f901:1:100::98", 33445, "B71E91E2F5029B0A84D3B1136319CDD3D1DB6D3702B6CEFA66A4BEB25A635916", {0}},
+			{"2001:bc8:4400:2100::13:41d", 33445, "2C289F9F37C20D09DA83565588BF496FAB3764853FA38141817A72E3F18ACA0B", {0}},
+			{"2a01:4f8:120:4091::3", 33445, "02807CF4F8BB8FB390CC3794BDF1E8449E9A8392C5D3F2200019DA9F1E812E46", {0}}
 		};
 		TOX_ERR_BOOTSTRAP rezulto_bootstrap;
 
