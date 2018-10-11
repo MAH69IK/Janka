@@ -40,6 +40,15 @@ void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_status, v
 
 // Почему static void?
 static void retrovoko_amikigxi(Tox *tox, const uint8_t *sxlosilo, const uint8_t *mesagxo, size_t length, void *user_data) {
+	// Мы получили ключ в бинарном виде, преобразовываем его в шестнадцатиричный. Это нужно для журналирования.
+	char sxlosilo_16[TOX_PUBLIC_KEY_SIZE * 2 + 1];
+	sodium_bin2hex(sxlosilo_16, sizeof(sxlosilo_16), sxlosilo, sizeof(sxlosilo));
+
+	// Ф-ция sodium_bin2hex() вернула ключ с буквами нижнего регистра, преобразовываем в верхний.
+	for (size_t i = 0; i < sizeof(sxlosilo_16) - 1; i++) {
+		sxlosilo_16[i] = toupper(sxlosilo_16[i]);
+	}
+
 	// Запрос принимается только от тех, кто прислал в запросе секретную фразу.
 	if (mesagxo) {
 		// Конечно же это надо будет читать из конфигурационного файла.
@@ -51,49 +60,48 @@ static void retrovoko_amikigxi(Tox *tox, const uint8_t *sxlosilo, const uint8_t 
 
 			switch (rezulto_friend_add_norequest) {
 				case TOX_ERR_FRIEND_ADD_OK:
-					fprintf (stdout, "Добавлен контакт %s.\n", sxlosilo);
+					// А мы можем получить имя этого контакта?
+					fprintf (stdout, "Добавлен контакт %s.\n", sxlosilo_16);
 					update_savedata_file(tox);
 					break;
 				case TOX_ERR_FRIEND_ADD_NULL:
 					// Проверить аргументы, вывести более детальную информацию.
-					fprintf (stderr, "Ошибка добавления контакта: один из аргументов ф-ции добавления не указан (NULL). Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: один из аргументов ф-ции добавления не указан (NULL). Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_TOO_LONG:
-					fprintf (stderr, "Ошибка добавления контакта: превышена длина сообщения. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: превышена длина сообщения. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_NO_MESSAGE:
-					fprintf (stderr, "Ошибка добавления контакта: отсутствует сообщение запроса. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: отсутствует сообщение запроса. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_OWN_KEY:
-					fprintf (stderr, "Ошибка добавления контакта: запрос послан самому себе (использован собственный идентификатор). Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: запрос послан самому себе (использован собственный идентификатор). Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_ALREADY_SENT:
-					fprintf (stderr, "Ошибка добавления контакта: запрос уже послан, либо контакт уже находится в списке контактов. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: запрос уже послан, либо контакт уже находится в списке контактов. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_BAD_CHECKSUM:
-					fprintf (stderr, "Ошибка добавления контакта: несовпадение контрольной суммы идентификатора контакта. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: несовпадение контрольной суммы идентификатора контакта. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_SET_NEW_NOSPAM:
-					fprintf (stderr, "Ошибка добавления контакта: изменилось значение поля \"антиспам\" идентификатора контакта. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: изменилось значение поля \"антиспам\" идентификатора контакта. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_MALLOC:
-					fprintf (stderr, "Ошибка добавления контакта: не удалось выделить память для увеличения списка контактов. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: не удалось выделить память для увеличения списка контактов. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
 					break;
 				default:
-					fprintf (stderr, "Произошла неучтённая ошибка добавления контакта. Скорее всего это результат обновления ядра Tox'а. Код ошибки - %d.\n", rezulto_friend_add_norequest);
+					fprintf (stderr, "Произошла неучтённая ошибка добавления контакта. Скорее всего это результат обновления ядра Tox'а. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
 					break;
 			}
 		}
 		else {
 			// Удалить контакт!
-			// Выводить ToX ID в 16-тиричном виде.
-			fprintf (stderr, "Поступил запрос на добавление в список контактов от абонента %s, но запрос содержал неверную секретную фразу. Переданная фраза: \"%s\".\n", sxlosilo, mesagxo);
+			fprintf (stderr, "Поступил запрос на добавление в список контактов от абонента %s, но запрос содержал неверную секретную фразу. Переданная фраза: \"%s\".\n", sxlosilo_16, mesagxo);
 		}
 	}
 	else {
 		// Удалить контакт!
-		// Выводить ToX ID в 16-тиричном виде.
-		fprintf (stderr, "Поступил запрос на добавление в список контактов от абонента %s, но запрос не содержал секретной фразы.\n", sxlosilo);
+		fprintf (stderr, "Поступил запрос на добавление в список контактов от абонента %s, но запрос не содержал секретной фразы.\n", sxlosilo_16);
 	}
 }
 
@@ -282,7 +290,8 @@ int main() {
 
 			switch (rezulto_bootstrap) {
 				case TOX_ERR_BOOTSTRAP_OK:
-					fprintf (stdout, "Успешное подключение к узлу %s:%d.\n", retnodoj[i].IP, retnodoj[i].pordo);
+					// IPv6 взять в квадратные скобочки.
+					fprintf (stdout, "Пробую подключиться к узлу %s:%d.\n", retnodoj[i].IP, retnodoj[i].pordo);
 					break;
 				case TOX_ERR_BOOTSTRAP_NULL:
 					// Проверить аргументы, вывести более детальную информацию.
