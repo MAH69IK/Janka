@@ -117,8 +117,10 @@ static void handle_friend_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_
 	}
 }
 
-int main() {
+static int main() {
+	// А что, если попробовать его сделать статическим, но при этом обернуть в отдельный блок?
 	Tox *tox;
+	// Обработать опции как надо.
 	struct Tox_Options options;
 	TOX_ERR_NEW rezulto_new;
 	// Возможно вынести инициализацию в отдельнюу малюсенькую ф-цию, это позволит повторять попытку.
@@ -149,10 +151,8 @@ int main() {
 		tox = tox_new(&options, &rezulto_new);
 	}
 
-	// return или exit? В чём разница? А может abort?
 	switch (rezulto_new) {
 		case TOX_ERR_NEW_OK:
-			// Тут всё хорошо.
 			fprintf (stdout, "Инициализация успешна.\n");
 			// Вывести информацию о том использовались ли ранее сохранённые данные или нет.
 			break;
@@ -207,7 +207,6 @@ int main() {
 			return 1;
 			break;
 	}
-	// rezulto_new больше не требуется, необходимо избавиться от переменной.
 
 	// Записываем наш Tox ID.
 	{
@@ -216,6 +215,7 @@ int main() {
 		tox_self_get_address(tox, tox_id_2);
 
 		// Ф-ция tox_self_get_address() возвращает Tox ID в бинарном виде, преобразовываем его в шестнадцатиричный.
+		fprintf (stdout, "Мой Tox ID: %s\n", tox_id_2);
 		char tox_id_16[TOX_ADDRESS_SIZE * 2 + 1];
 		sodium_bin2hex(tox_id_16, sizeof(tox_id_16), tox_id_2, sizeof(tox_id_2));
 
@@ -242,16 +242,13 @@ int main() {
 			case TOX_ERR_SET_INFO_NULL:
 				// Возможно задавать стандартное имя в таких случаях. Или через конфиг.
 				fprintf (stderr, "Ошибка задания имени: задаваемое имя не указано (NULL). Код ошибки - %d.\n", rezulto_self_set_name);
-				return 1;
 				break;
 			case TOX_ERR_SET_INFO_TOO_LONG:
 				fprintf (stderr, "Ошибка задания имени: имя превышает допустимый размер. Код ошибки - %d.\n", rezulto_self_set_name);
 				// Вывести информацию о макс. длине и длине имени.
-				return 1;
 				break;
 			default:
 				fprintf (stderr, "Произошла неучтённая ошибка задания имени. Скорее всего это результат обновления ядра Tox'а. Код ошибки - %d.\n", rezulto_self_set_name);
-				return 1;
 				break;
 		}
 	}
