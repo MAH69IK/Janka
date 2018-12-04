@@ -232,7 +232,7 @@ static int main() {
 	{
 		const uint8_t *const nomo = "Янка";
 		TOX_ERR_SET_INFO rezulto_self_set_name;
-		
+
 		tox_self_set_name(tox, nomo, strlen(nomo), &rezulto_self_set_name);
 
 		switch (rezulto_self_set_name) {
@@ -282,9 +282,11 @@ static int main() {
 
 		for (size_t i = 0; i < sizeof(retnodoj) / sizeof(DHT_retnodo); i++) {
 			sodium_hex2bin(retnodoj[i].id_2, sizeof(retnodoj[i].id_2), retnodoj[i].id_16, sizeof(retnodoj[i].id_16) - 1, NULL, NULL, NULL);
-			// Результат - bool, его надо проверять. Как и обработать rezulto_bootstrap.
+
 			tox_bootstrap(tox, retnodoj[i].IP, retnodoj[i].pordo, retnodoj[i].id_16, &rezulto_bootstrap);
 
+			// Добавить инфу на счёт того, к какому именно узлу не удалось выполнить подключение
+			// (IPv6 взять в квадратные скобочки):
 			switch (rezulto_bootstrap) {
 				case TOX_ERR_BOOTSTRAP_OK:
 					// IPv6 взять в квадратные скобочки.
@@ -293,19 +295,15 @@ static int main() {
 				case TOX_ERR_BOOTSTRAP_NULL:
 					// Проверить аргументы, вывести более детальную информацию.
 					fprintf (stderr, "Ошибка подключения к узлу: один из аргументов ф-ции подключения не указан (NULL). Код ошибки - %d.\n", rezulto_bootstrap);
-					return 1;
 					break;
 				case TOX_ERR_BOOTSTRAP_BAD_HOST:
 					fprintf (stderr, "Ошибка подключения к узлу %s:%d: не удалось определить IP по имени, либо переданный IP некорректен. Код ошибки - %d.\n", retnodoj[i].IP, retnodoj[i].pordo, rezulto_bootstrap);
-					return 1;
 					break;
 				case TOX_ERR_BOOTSTRAP_BAD_PORT:
 					fprintf (stderr, "Ошибка подключения к узлу %s: указанный порт (%d) некорректен. Допустимое значение - от 1 до 65 535. Код ошибки - %d.\n", retnodoj[i].IP, retnodoj[i].pordo, rezulto_bootstrap);
-					return 1;
 					break;
 				default:
 					fprintf (stderr, "Произошла неучтённая ошибка подключения к узлу. Скорее всего это результат обновления ядра Tox'а. Код ошибки - %d.\n", rezulto_bootstrap);
-					return 1;
 					break;
 			}
 		}
