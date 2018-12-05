@@ -38,8 +38,7 @@ void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_status, v
 	}
 }
 
-// Почему static void?
-static void retrovoko_amikigxi(Tox *tox, const uint8_t *sxlosilo, const uint8_t *mesagxo, size_t length, void *user_data) {
+static void retrovoko_amikiĝi(Tox *tox, const uint8_t *sxlosilo, const uint8_t *mesagxo, size_t longo, void *uzanta_dateno) {
 	// Мы получили ключ в бинарном виде, преобразовываем его в шестнадцатиричный. Это нужно для журналирования.
 	char sxlosilo_16[TOX_PUBLIC_KEY_SIZE * 2 + 1];
 	sodium_bin2hex(sxlosilo_16, sizeof(sxlosilo_16), sxlosilo, sizeof(sxlosilo));
@@ -255,12 +254,14 @@ static int main() {
 
 	// Регистрируем ф-ции обратного вызова.
 	// handle_self_connection_status - для обработки потери соединения;
-	// handle_friend_request - для обработки входящих запросов на добавление в список контактов;
+	// retrovoko_amikiĝi - для обработки входящих запросов на добавление в список контактов;
 	// handle_friend_message - для обработки входящих сообщений.
 	// Возможно в будущем добавить настраиваемую опцию отправки сообщения при появлении контакта в Сети.
 	tox_callback_self_connection_status(tox, handle_self_connection_status);
-	tox_callback_friend_request(tox, retrovoko_amikigxi);
+	tox_callback_friend_request(tox, retrovoko_amikiĝi);
 	tox_callback_friend_message(tox, handle_friend_message);
+	// Нужно ли нам регистрировать NULL для событий, связанных с приёмом файлов?
+	// И должно ли это быть до подключения к Сети?
 
 	// Подключаемся к Сети.
 	{
@@ -285,7 +286,8 @@ static int main() {
 
 			tox_bootstrap(tox, retnodoj[i].IP, retnodoj[i].pordo, retnodoj[i].id_16, &rezulto_bootstrap);
 
-			// Добавить инфу на счёт того, к какому именно узлу не удалось выполнить подключение
+			// Добавить инфу на счёт того, к какому именно узлу не удалось выполнить подключение,
+			// проверить что в принципе было хотя бы какое-то успешное подключение.
 			// (IPv6 взять в квадратные скобочки):
 			switch (rezulto_bootstrap) {
 				case TOX_ERR_BOOTSTRAP_OK:
@@ -315,7 +317,6 @@ static int main() {
 
 	while (true) {
 		tox_iterate(tox, NULL);
-		// 1 000 - это что?
 		usleep(tox_iteration_interval(tox) * 1000);
 	}
 
