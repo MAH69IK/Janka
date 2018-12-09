@@ -38,14 +38,14 @@ void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_status, v
 	}
 }
 
-static void retrovoko_amikiĝi(Tox *tox, const uint8_t *sxlosilo, const uint8_t *mesagxo, size_t longo, void *uzanta_dateno) {
+static void retrovoko_amikiĝi(Tox *tox, const uint8_t *tox_id_2, const uint8_t *mesagxo, size_t longo, void *uzanta_dateno) {
 	// Мы получили ключ в бинарном виде, преобразовываем его в шестнадцатиричный. Это нужно для журналирования.
-	char sxlosilo_16[TOX_PUBLIC_KEY_SIZE * 2 + 1];
-	sodium_bin2hex(sxlosilo_16, sizeof(sxlosilo_16), sxlosilo, sizeof(sxlosilo));
+	char tox_id_16[TOX_PUBLIC_KEY_SIZE * 2 + 1];
+	sodium_bin2hex(tox_id_16, sizeof(tox_id_16), tox_id_2, sizeof(tox_id_2));
 
 	// Ф-ция sodium_bin2hex() вернула ключ с буквами нижнего регистра, преобразовываем в верхний.
-	for (size_t i = 0; i < sizeof(sxlosilo_16) - 1; i++) {
-		sxlosilo_16[i] = toupper(sxlosilo_16[i]);
+	for (size_t i = 0; i < sizeof(tox_id_16) - 1; i++) {
+		tox_id_16[i] = toupper(tox_id_16[i]);
 	}
 
 	// Запрос принимается только от тех, кто прислал в запросе секретную фразу.
@@ -55,52 +55,52 @@ static void retrovoko_amikiĝi(Tox *tox, const uint8_t *sxlosilo, const uint8_t 
 		if (strcmp(mesagxo, sekreto) == 0) {
 			TOX_ERR_FRIEND_ADD rezulto_friend_add_norequest;
 
-			tox_friend_add_norequest(tox, sxlosilo, &rezulto_friend_add_norequest);
+			tox_friend_add_norequest(tox, tox_id_2, &rezulto_friend_add_norequest);
 
 			switch (rezulto_friend_add_norequest) {
 				case TOX_ERR_FRIEND_ADD_OK:
 					// А мы можем получить имя этого контакта?
-					fprintf (stdout, "Добавлен контакт %s.\n", sxlosilo_16);
+					fprintf (stdout, "Добавлен контакт %s.\n", tox_id_16);
 					update_savedata_file(tox);
 					break;
 				case TOX_ERR_FRIEND_ADD_NULL:
 					// Проверить аргументы, вывести более детальную информацию.
-					fprintf (stderr, "Ошибка добавления контакта: один из аргументов ф-ции добавления не указан (NULL). Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: один из аргументов ф-ции добавления не указан (NULL). Добавляемый контакт: %s. Код ошибки - %d.\n", tox_id_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_TOO_LONG:
-					fprintf (stderr, "Ошибка добавления контакта: превышена длина сообщения. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: превышена длина сообщения. Добавляемый контакт: %s. Код ошибки - %d.\n", tox_id_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_NO_MESSAGE:
-					fprintf (stderr, "Ошибка добавления контакта: отсутствует сообщение запроса. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: отсутствует сообщение запроса. Добавляемый контакт: %s. Код ошибки - %d.\n", tox_id_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_OWN_KEY:
-					fprintf (stderr, "Ошибка добавления контакта: запрос послан самому себе (использован собственный идентификатор). Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: запрос послан самому себе (использован собственный идентификатор). Добавляемый контакт: %s. Код ошибки - %d.\n", tox_id_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_ALREADY_SENT:
-					fprintf (stderr, "Ошибка добавления контакта: запрос уже послан, либо контакт уже находится в списке контактов. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: запрос уже послан, либо контакт уже находится в списке контактов. Добавляемый контакт: %s. Код ошибки - %d.\n", tox_id_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_BAD_CHECKSUM:
-					fprintf (stderr, "Ошибка добавления контакта: несовпадение контрольной суммы идентификатора контакта. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: несовпадение контрольной суммы идентификатора контакта. Добавляемый контакт: %s. Код ошибки - %d.\n", tox_id_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_SET_NEW_NOSPAM:
-					fprintf (stderr, "Ошибка добавления контакта: изменилось значение поля \"антиспам\" идентификатора контакта. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: изменилось значение поля \"антиспам\" идентификатора контакта. Добавляемый контакт: %s. Код ошибки - %d.\n", tox_id_16, rezulto_friend_add_norequest);
 					break;
 				case TOX_ERR_FRIEND_ADD_MALLOC:
-					fprintf (stderr, "Ошибка добавления контакта: не удалось выделить память для увеличения списка контактов. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
+					fprintf (stderr, "Ошибка добавления контакта: не удалось выделить память для увеличения списка контактов. Добавляемый контакт: %s. Код ошибки - %d.\n", tox_id_16, rezulto_friend_add_norequest);
 					break;
 				default:
-					fprintf (stderr, "Произошла неучтённая ошибка добавления контакта. Скорее всего это результат обновления ядра Tox'а. Добавляемый контакт: %s. Код ошибки - %d.\n", sxlosilo_16, rezulto_friend_add_norequest);
+					fprintf (stderr, "Произошла неучтённая ошибка добавления контакта. Скорее всего это результат обновления ядра Tox'а. Добавляемый контакт: %s. Код ошибки - %d.\n", tox_id_16, rezulto_friend_add_norequest);
 					break;
 			}
 		}
 		else {
 			// Удалить контакт!
-			fprintf (stderr, "Поступил запрос на добавление в список контактов от абонента %s, но запрос содержал неверную секретную фразу. Переданная фраза: \"%s\".\n", sxlosilo_16, mesagxo);
+			fprintf (stderr, "Поступил запрос на добавление в список контактов от абонента %s, но запрос содержал неверную секретную фразу. Переданная фраза: \"%s\".\n", tox_id_16, mesagxo);
 		}
 	}
 	else {
 		// Удалить контакт!
-		fprintf (stderr, "Поступил запрос на добавление в список контактов от абонента %s, но запрос не содержал секретной фразы.\n", sxlosilo_16);
+		fprintf (stderr, "Поступил запрос на добавление в список контактов от абонента %s, но запрос не содержал секретной фразы.\n", tox_id_16);
 	}
 }
 
