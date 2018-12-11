@@ -8,37 +8,22 @@
 #include <tox/tox.h>
 
 const char *const savedata_filename = "janka.tox";
-const char *const savedata_tmp_filename = "janka.tox.tmp";
 
-void update_savedata_file(const Tox *tox) {
+static void konservi(const Tox const *tox) {
 	const size_t size = tox_get_savedata_size(tox);
 	uint8_t *savedata = malloc(size);
 	tox_get_savedata(tox, savedata);
 
-	FILE *f = fopen(savedata_tmp_filename, "wb");
+	FILE *f = fopen(savedata_filename.".tmp", "wb");
 	fwrite(savedata, size, 1, f);
 	fclose(f);
 
 	free(savedata);
 
-	rename(savedata_tmp_filename, savedata_filename);
+	rename(savedata_filename.".tmp", savedata_filename);
 }
 
-void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *user_data) {
-	switch (connection_status) {
-		case TOX_CONNECTION_NONE:
-			fprintf(stdout, "Offline\n");
-			break;
-		case TOX_CONNECTION_TCP:
-			fprintf(stdout, "Online, using TCP\n");
-			break;
-		case TOX_CONNECTION_UDP:
-			fprintf(stdout, "Online, using UDP\n");
-			break;
-	}
-}
-
-static void retrovoko_amikiĝi(Tox *tox, const uint8_t *tox_id_2, const uint8_t *mesagxo, size_t longo, void *uzanta_dateno) {
+static void retrovoko_amikigxi(Tox *tox, const uint8_t *tox_id_2, const uint8_t *mesagxo, size_t longo, void *uzanta_dateno) {
 	// Мы получили ключ в бинарном виде, преобразовываем его в шестнадцатиричный. Это нужно для журналирования.
 	char tox_id_16[TOX_PUBLIC_KEY_SIZE * 2 + 1];
 	sodium_bin2hex(tox_id_16, sizeof(tox_id_16), tox_id_2, sizeof(tox_id_2));
@@ -61,7 +46,7 @@ static void retrovoko_amikiĝi(Tox *tox, const uint8_t *tox_id_2, const uint8_t 
 				case TOX_ERR_FRIEND_ADD_OK:
 					// А мы можем получить имя этого контакта?
 					fprintf (stdout, "Добавлен контакт %s.\n", tox_id_16);
-					update_savedata_file(tox);
+					konservi(tox);
 					break;
 				case TOX_ERR_FRIEND_ADD_NULL:
 					// Проверить аргументы, вывести более детальную информацию.
@@ -95,7 +80,7 @@ static void retrovoko_amikiĝi(Tox *tox, const uint8_t *tox_id_2, const uint8_t 
 		}
 		else {
 			// Удалить контакт!
-			fprintf (stderr, "Поступил запрос на добавление в список контактов от абонента %s, но запрос содержал неверную секретную фразу. Переданная фраза: \"%s\".\n", tox_id_16, mesagxo);
+			fprintf (stderr, "Поступил запрос на добавление в список контактов от абонента %s, но в сообщении не было правильной секретной фразы. Переданное сообщение: \"%s\".\n", tox_id_16, mesagxo);
 		}
 	}
 	else {
@@ -104,7 +89,22 @@ static void retrovoko_amikiĝi(Tox *tox, const uint8_t *tox_id_2, const uint8_t 
 	}
 }
 
-// Почему static?
+static void retrovoko_retstato(Tox *tox, TOX_CONNECTION retstato, void *uzanta_dateno) {
+	switch (retstato) {
+		case TOX_CONNECTION_NONE:
+			fprintf (stdout, "Отсутствует подключение к Сети.\n");
+			break;
+		case TOX_CONNECTION_TCP:
+			fprintf (stdout, "Подключилась к Сети через TCP-ретранслятор.\n");
+			break;
+		case TOX_CONNECTION_UDP:
+			fprintf (stdout, "Подключилась к Сети через UDP.\n");
+			break;
+		default:
+			fprintf (stderr, "Произошло неучтённое изменение статуса подключения. Скорее всего это результат обновления ядра Tox'а. Код статуса - %d.\n", retstato);
+	}
+}
+
 static void handle_friend_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type, const uint8_t *mesagxo, size_t length, void *user_data) {
 	// Пример из документации, который просто отсылает сообщение назад. Нужно будет переделать под обработку полученных сообщений.
 	TOX_ERR_FRIEND_SEND_MESSAGE rezulto_friend_send_message;
@@ -253,17 +253,18 @@ static int main() {
 	}
 
 	// Регистрируем ф-ции обратного вызова.
-	// handle_self_connection_status - для обработки потери соединения;
-	// retrovoko_amikiĝi - для обработки входящих запросов на добавление в список контактов;
+	// retrovoko_amikigxi - обработка входящих запросов на добавление в список контактов;
+	// retrovoko_retstato - обработка изменений соединения с Сетью;
 	// handle_friend_message - для обработки входящих сообщений.
 	// Возможно в будущем добавить настраиваемую опцию отправки сообщения при появлении контакта в Сети.
-	tox_callback_self_connection_status(tox, handle_self_connection_status);
-	tox_callback_friend_request(tox, retrovoko_amikiĝi);
+	tox_callback_friend_request(tox, retrovoko_amikigxi);
+	tox_callback_self_connection_status(tox, retrovoko_retstato);
 	tox_callback_friend_message(tox, handle_friend_message);
 	// Нужно ли нам регистрировать NULL для событий, связанных с приёмом файлов?
 	// И должно ли это быть до подключения к Сети?
 
 	// Подключаемся к Сети.
+	// Это следует вынести в отдельную ф-цию, что бы иметь возможность переподключаться.
 	{
 		typedef struct DHT_retnodo {
 			const char *IP;
@@ -313,7 +314,7 @@ static int main() {
 
 	// Сохраняем наши данные.
 	// Это нужно делать лишь при первом запуске, если наш ID ещё не сохранён.
-	update_savedata_file(tox);
+	konservi(tox);
 
 	while (true) {
 		tox_iterate(tox, NULL);
